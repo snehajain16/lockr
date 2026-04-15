@@ -22,13 +22,14 @@ upstreamMarkers:
   rufloManagedOverlay: false
   note: Ruflo MCP unavailable in-session; local BMAD bootstrap used
 currentPhase: solutioning
-currentRole: pm-dev
-nextRole: dev
-activeWorkflow: stories
+currentRole: tea
+nextRole: architect-dev
+activeWorkflow: validation
 blockers: []
 openDecisions:
-  - Choose default vault backend for v1: encrypted single file vs per-secret records
-  - Choose TUI framework: Textual or prompt_toolkit
+  - Define the exact Epic 2 scope boundary between project scoping and `.env` import/export
+  - Choose final unlock-session policy: indefinite cache vs TTL-based cache
+  - Decide whether Epic 1 session-cache behavior is acceptable before broader rollout
   - Decide whether cloud secret managers are explicitly out of scope for v1
-requiredNextArtifact: tech_spec
+requiredNextArtifact: tech_spec_epic2
 lastCheckpoint: docs/planning/checkpoints.md

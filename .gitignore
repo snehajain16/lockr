@@ -1,0 +1,37 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Packaging and virtual environments
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Coverage and test artifacts
+.coverage
+.coverage.*
+htmlcov/
+
+# IDE and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local Lockr runtime data
+.lockr/
+*.lockr
+session.json
+
+# Local temp and validation directories
+.tmp-verify-epic1/
+tmp/

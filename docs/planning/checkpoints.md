@@ -49,3 +49,36 @@ date: 2026-04-15
 - decisions: Epic sequence starts with vault core; backup auto-commit remains opt-in; shell support starts with PowerShell and POSIX
 - handoff target: dev
 - completion state: complete
+
+## Checkpoint 005
+
+- role: architect-dev
+- phase: solutioning
+- workflow: tech-spec
+- artifact created or updated: tech_spec_epic1
+- blockers: none
+- decisions: Epic 1 will use a single encrypted vault file, local session cache, scrypt KDF, AES-GCM encryption, and Typer CLI
+- handoff target: dev
+- completion state: complete
+
+## Checkpoint 006
+
+- role: dev
+- phase: implementation
+- workflow: dev-story
+- artifact created or updated: Epic 1 codebase and tests
+- blockers: none
+- decisions: session cache stores the derived vault key while unlocked; CLI slice limited to init, unlock, lock, set, get, and list
+- handoff target: tea
+- completion state: complete
+
+## Checkpoint 007
+
+- role: tea
+- phase: validation
+- workflow: validation
+- artifact created or updated: validation_epic1
+- blockers: none
+- decisions: Epic 1 validation passed via automated tests and direct service verification; Epic 2 should begin with a new tech spec
+- handoff target: architect-dev
+- completion state: complete
