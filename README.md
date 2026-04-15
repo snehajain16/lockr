@@ -1,0 +1,197 @@
+# Lockr
+
+Lockr is a terminal-first secrets vault for developers who want local encrypted secret storage, project-scoped organization, and ergonomic CLI workflows.
+
+Current implementation status:
+
+- Epic 1 complete: vault init, unlock/lock, set/get/list
+- Epic 2 complete: project/environment scoping, `.env` import preview/apply, `.env` export
+- Epic 3+ planned: runtime injection, backup/recovery, TUI, richer audit workflows
+
+## Why Lockr
+
+Developers still end up scattering secrets across `.env` files, shell profiles, notes, and local config files. Lockr gives you a single encrypted local vault with explicit unlock behavior and CLI commands that fit normal development workflows.
+
+## Features
+
+### Implemented
+
+- encrypted local vault stored as a single encrypted file
+- explicit `init`, `unlock`, and `lock` flows
+- create, update, read, and list secrets
+- project and environment scoped secret organization
+- redacted `.env` preview before import
+- `.env` import with conflict skip or overwrite behavior
+- `.env` export to stdout or explicit file destination
+
+### Planned
+
+- runtime environment injection
+- encrypted git backup and restore
+- TUI-based secret browsing and editing
+- richer audit metadata and rotation workflows
+
+## Install
+
+Requirements:
+
+- Python 3.12+
+
+Install in editable mode for local development:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+After installation, the CLI is available as:
+
+```bash
+lockr --help
+```
+
+## Quick Start
+
+Initialize a new vault:
+
+```bash
+lockr init
+```
+
+Store a secret:
+
+```bash
+lockr set OPENAI_API_KEY --value sk-... --project myapp --environment dev
+```
+
+Read a masked secret:
+
+```bash
+lockr get OPENAI_API_KEY --project myapp --environment dev
+```
+
+Read the raw secret value:
+
+```bash
+lockr get OPENAI_API_KEY --project myapp --environment dev --raw
+```
+
+List stored secrets:
+
+```bash
+lockr list --project myapp --environment dev
+```
+
+Lock and unlock the vault:
+
+```bash
+lockr lock
+lockr unlock
+```
+
+Preview a `.env` import without writing anything:
+
+```bash
+lockr import-env .env --project myapp --environment dev --preview
+```
+
+Apply a `.env` import:
+
+```bash
+lockr import-env .env --project myapp --environment dev --apply
+```
+
+Overwrite existing keys during import:
+
+```bash
+lockr import-env .env --project myapp --environment dev --apply --overwrite
+```
+
+Export a scoped `.env` payload to stdout:
+
+```bash
+lockr export-env --project myapp --environment dev --stdout
+```
+
+Export a scoped `.env` payload to a file:
+
+```bash
+lockr export-env --project myapp --environment dev --output .env.local
+```
+
+## Command Summary
+
+### Vault Commands
+
+- `lockr init`
+- `lockr unlock`
+- `lockr lock`
+- `lockr set KEY --value VALUE --project NAME --environment NAME`
+- `lockr get KEY [--raw|--json] --project NAME --environment NAME`
+- `lockr list [--json] [--project NAME] [--environment NAME]`
+
+### `.env` Commands
+
+- `lockr import-env PATH --preview --project NAME --environment NAME`
+- `lockr import-env PATH --apply [--overwrite] --project NAME --environment NAME`
+- `lockr export-env --stdout --project NAME --environment NAME`
+- `lockr export-env --output PATH --project NAME --environment NAME`
+
+## Storage Model
+
+Lockr currently stores vault contents as one encrypted local file. While the vault is unlocked, a local session file caches the derived vault key so repeated commands do not require re-entering the password every time.
+
+Current local runtime artifacts:
+
+- vault file: `LOCKR_HOME/vault.lockr`
+- session state: `LOCKR_HOME/session.json`
+
+If `LOCKR_HOME` is not set, Lockr defaults to `~/.lockr`.
+
+## Security Notes
+
+- The vault is encrypted at rest using the `cryptography` package.
+- Secret values are masked by default in normal `get` output.
+- `.env` import preview redacts values before display.
+- `.env` export is plaintext by design and therefore requires explicit stdout or file output.
+- While unlocked, the derived vault key is cached locally in `session.json`. This is a current design tradeoff and not the final long-term session model.
+
+This project is not yet a production-grade enterprise secret manager. It is an actively evolving local-first developer tool.
+
+## Development
+
+Run tests:
+
+```bash
+pytest -q
+```
+
+Project layout:
+
+```text
+src/lockr/
+  app/           application services
+  cli/           Typer command surface
+  domain/        core secret/vault models
+  integrations/  .env helpers
+  security/      encryption and key derivation
+  storage/       file persistence helpers
+docs/planning/   BMAD artifacts, tech specs, and validations
+tests/           CLI and workflow tests
+```
+
+## Validation Status
+
+The currently implemented work has been validated through automated tests and direct verification:
+
+- Epic 1 validation: vault lifecycle and secret CRUD
+- Epic 2 validation: project/environment workflows and `.env` import/export
+
+## Roadmap
+
+- Epic 3: runtime injection and shell export workflows
+- Epic 4: encrypted git backup and recovery
+- Epic 5: TUI and audit visibility
+
+## License
+
+No license has been added yet.

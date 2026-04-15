@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import getpass
 import json
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from lockr.app.vault_service import (
+    ExportResult,
+    ImportApplyResult,
     LockrError,
     SecretNotFoundError,
     VaultAlreadyExistsError,
@@ -14,6 +17,7 @@ from lockr.app.vault_service import (
     VaultService,
 )
 from lockr.paths import get_lockr_paths
+from lockr.storage.files import atomic_write_text
 
 app = typer.Typer(help="Lockr secrets vault")
 
@@ -36,6 +40,13 @@ def prompt_password(confirm: bool = False) -> str:
 
 def render_error(exc: Exception) -> None:
     typer.echo(str(exc), err=True)
+
+
+def render_apply_summary(result: ImportApplyResult) -> str:
+    return (
+        f"imported={result.imported} updated={result.updated} "
+        f"skipped={result.skipped} malformed={result.malformed}"
+    )
 
 
 @app.command("init")
@@ -139,3 +150,55 @@ def list_command(
         return
     for item in items:
         typer.echo(f"{item.project}/{item.environment} {item.key} updated={item.updated_at}")
+
+
+@app.command("import-env")
+def import_env_command(
+    env_path: Path,
+    project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
+    environment: Annotated[str, typer.Option("--environment", help="Environment name.")] = "default",
+    preview: Annotated[bool, typer.Option("--preview", help="Show redacted preview only.")] = False,
+    apply: Annotated[bool, typer.Option("--apply", help="Apply the import to the vault.")] = False,
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Overwrite conflicting keys.")] = False,
+) -> None:
+    if preview == apply:
+        typer.echo("Choose exactly one of --preview or --apply.", err=True)
+        raise typer.Exit(code=2)
+    try:
+        if preview:
+            result = service().preview_import_env(env_path)
+            for entry in result.entries:
+                masked = "*" * len(entry.value) if len(entry.value) <= 4 else f"{entry.value[:2]}{'*' * (len(entry.value) - 4)}{entry.value[-2:]}"
+                typer.echo(f"{entry.key}={masked}")
+            if result.malformed_lines:
+                typer.echo(f"Malformed lines: {', '.join(str(line) for line in result.malformed_lines)}")
+            return
+
+        result = service().apply_import_env(env_path, project=project, environment=environment, overwrite=overwrite)
+        typer.echo(render_apply_summary(result))
+    except (LockrError, VaultLockedError, OSError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+
+
+@app.command("export-env")
+def export_env_command(
+    project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
+    environment: Annotated[str, typer.Option("--environment", help="Environment name.")] = "default",
+    stdout: Annotated[bool, typer.Option("--stdout", help="Print .env content to stdout.")] = False,
+    output: Annotated[Path | None, typer.Option("--output", help="Write .env content to a file.")] = None,
+) -> None:
+    if stdout == (output is not None):
+        typer.echo("Choose exactly one of --stdout or --output.", err=True)
+        raise typer.Exit(code=2)
+    try:
+        result = service().export_env(project=project, environment=environment)
+        if stdout:
+            typer.echo(result.content, nl=False)
+            return
+        typer.echo("Warning: writing plaintext .env content to disk.", err=True)
+        atomic_write_text(output, result.content)
+        typer.echo(f"Exported {result.count} secrets to {output}.")
+    except (LockrError, VaultLockedError, OSError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc

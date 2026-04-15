@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
+from pathlib import Path
 
 from lockr.domain.models import SecretRecord, VaultData, utc_now
+from lockr.integrations.env_files import EnvEntry, EnvParseResult, parse_env_file, render_env
 from lockr.paths import LockrPaths
 from lockr.security.crypto import (
     EncryptedVault,
@@ -43,6 +45,26 @@ class ListResult:
     project: str
     environment: str
     updated_at: str
+
+
+@dataclass
+class ImportPreviewResult:
+    entries: list[EnvEntry]
+    malformed_lines: list[int]
+
+
+@dataclass
+class ImportApplyResult:
+    imported: int
+    updated: int
+    skipped: int
+    malformed: int
+
+
+@dataclass
+class ExportResult:
+    content: str
+    count: int
 
 
 class VaultService:
@@ -123,6 +145,65 @@ class VaultService:
                 )
             )
         return sorted(items, key=lambda item: (item.project, item.environment, item.key))
+
+    def preview_import_env(self, env_path: Path) -> ImportPreviewResult:
+        result = parse_env_file(env_path)
+        return ImportPreviewResult(entries=result.entries, malformed_lines=result.malformed_lines)
+
+    def apply_import_env(
+        self,
+        env_path: Path,
+        project: str,
+        environment: str,
+        overwrite: bool = False,
+    ) -> ImportApplyResult:
+        parse_result = parse_env_file(env_path)
+        vault = self._load_vault()
+        imported = 0
+        updated = 0
+        skipped = 0
+
+        for entry in parse_result.entries:
+            existing = self._find_secret(vault, entry.key, project, environment)
+            if existing and not overwrite:
+                skipped += 1
+                continue
+            if existing:
+                existing.value = entry.value
+                existing.updated_at = utc_now()
+                existing.last_rotated_at = utc_now()
+                updated += 1
+            else:
+                vault.secrets.append(
+                    SecretRecord(
+                        key=entry.key,
+                        value=entry.value,
+                        project=project,
+                        environment=environment,
+                    )
+                )
+                imported += 1
+
+        self._save_vault(vault)
+        return ImportApplyResult(
+            imported=imported,
+            updated=updated,
+            skipped=skipped,
+            malformed=len(parse_result.malformed_lines),
+        )
+
+    def export_env(
+        self,
+        project: str,
+        environment: str,
+    ) -> ExportResult:
+        vault = self._load_vault()
+        selected = [
+            (secret.key, secret.value)
+            for secret in sorted(vault.secrets, key=lambda item: item.key)
+            if secret.project == project and secret.environment == environment
+        ]
+        return ExportResult(content=render_env(selected), count=len(selected))
 
     def _write_session(self, key_b64: str) -> None:
         payload = {"key": key_b64, "created_at": utc_now()}

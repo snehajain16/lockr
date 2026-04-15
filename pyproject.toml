@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "lockr"
 version = "0.1.0"
 description = "Terminal-based secrets vault with encrypted local storage."
-readme = "docs/planning/overview.md"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "cryptography>=45.0.0",
