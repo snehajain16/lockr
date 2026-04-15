@@ -1,0 +1,34 @@
+bmadVersion: v6-overlay-local-bootstrap
+bmadProjectMode: upstream-bmad-v6
+migrationStatus: not_required
+migrationSource: greenfield-bootstrap
+enabledModules:
+  - core
+  - bmm
+  - bmb
+  - cis
+migrationPreflight:
+  checkedAt: 2026-04-15
+  result: no-existing-bmad-state-detected
+migrationHistory: []
+compatibilityMode: false
+canonicalArtifacts:
+  overview: docs/planning/overview.md
+  prd: docs/planning/prd.md
+  architecture: docs/planning/architecture.md
+  stories: docs/planning/stories.md
+  checkpoints: docs/planning/checkpoints.md
+upstreamMarkers:
+  rufloManagedOverlay: false
+  note: Ruflo MCP unavailable in-session; local BMAD bootstrap used
+currentPhase: solutioning
+currentRole: pm-dev
+nextRole: dev
+activeWorkflow: stories
+blockers: []
+openDecisions:
+  - Choose default vault backend for v1: encrypted single file vs per-secret records
+  - Choose TUI framework: Textual or prompt_toolkit
+  - Decide whether cloud secret managers are explicitly out of scope for v1
+requiredNextArtifact: tech_spec
+lastCheckpoint: docs/planning/checkpoints.md
