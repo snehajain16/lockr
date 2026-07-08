@@ -47,16 +47,16 @@ development_status:
   epic-2-retrospective: optional
 
   # ── Epic 3: Runtime Injection (NEXT) ─────────────────────────────────────
-  epic-3: in-progress
+  epic-3: done
   3-1-run-a-command-with-injected-secrets: done
-  3-2-print-shell-export-output: backlog
+  3-2-print-shell-export-output: done
   epic-3-retrospective: optional
 
   # ── Epic 4: Backup and Recovery ───────────────────────────────────────────
-  epic-4: in-progress
+  epic-4: done
   4-1-create-encrypted-git-backup: review
-  4-2-restore-from-encrypted-backup: backlog
-  4-3-show-backup-status: backlog
+  4-2-restore-from-encrypted-backup: done
+  4-3-show-backup-status: done
   epic-4-retrospective: optional
 
   # ── Epic 5: TUI and Audit Visibility ──────────────────────────────────────
