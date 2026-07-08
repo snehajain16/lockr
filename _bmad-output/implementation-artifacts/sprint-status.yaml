@@ -48,7 +48,7 @@ development_status:
 
   # ── Epic 3: Runtime Injection (NEXT) ─────────────────────────────────────
   epic-3: in-progress
-  3-1-run-a-command-with-injected-secrets: ready-for-dev
+  3-1-run-a-command-with-injected-secrets: done
   3-2-print-shell-export-output: backlog
   epic-3-retrospective: optional
 

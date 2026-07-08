@@ -1,6 +1,10 @@
 # Story 3.1: Run a Command with Injected Secrets
 
-**Status:** ready-for-dev
+---
+baseline_commit: 31b88e7fe31ffd3f5e35844fc459f50f2f1a2f9e
+---
+
+**Status:** in-progress
 **Epic:** 3 – Runtime Injection
 **Story ID:** 3.1
 **Date:** 2026-07-08
