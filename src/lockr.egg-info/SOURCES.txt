@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 docs/planning/overview.md
 src/lockr/__init__.py
@@ -15,8 +16,11 @@ src/lockr/cli/__init__.py
 src/lockr/cli/main.py
 src/lockr/domain/__init__.py
 src/lockr/domain/models.py
+src/lockr/integrations/__init__.py
+src/lockr/integrations/env_files.py
 src/lockr/security/__init__.py
 src/lockr/security/crypto.py
 src/lockr/storage/__init__.py
 src/lockr/storage/files.py
 tests/test_epic1_cli.py
+tests/test_epic2_env_workflow.py
