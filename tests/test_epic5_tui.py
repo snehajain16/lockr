@@ -97,3 +97,64 @@ def test_detail_screen_hides_value(tmp_path: Path):
             for w in widgets
         )
         assert "super_secret_value_never_show" not in content
+
+
+# ── Story 5.2: View audit metadata ───────────────────────────────────────────
+
+def test_audit_command_exists(tmp_path: Path):
+    result = run_lockr(["audit", "--help"], tmp_path)
+    assert result.exit_code == 0
+
+
+def test_audit_lists_metadata_without_value(tmp_path: Path):
+    _init_and_unlock(tmp_path)
+    run_lockr(["set", "MY_KEY", "--value", "supersecret"], tmp_path)
+    result = run_lockr(["audit"], tmp_path)
+    assert result.exit_code == 0
+    assert "MY_KEY" in result.output
+    assert "supersecret" not in result.output
+    assert "created=" in result.output
+    assert "updated=" in result.output
+
+
+def test_audit_json_output(tmp_path: Path):
+    import json as json_lib
+    _init_and_unlock(tmp_path)
+    run_lockr(["set", "KEY_A", "--value", "val_a", "--project", "proj"], tmp_path)
+    result = run_lockr(["audit", "--json"], tmp_path)
+    assert result.exit_code == 0
+    data = json_lib.loads(result.output)
+    assert isinstance(data, list)
+    assert len(data) == 1
+    record = data[0]
+    assert record["key"] == "KEY_A"
+    assert record["project"] == "proj"
+    assert "created_at" in record
+    assert "updated_at" in record
+    assert "last_rotated_at" in record
+    assert "value" not in record
+
+
+def test_audit_filter_by_project(tmp_path: Path):
+    _init_and_unlock(tmp_path)
+    run_lockr(["set", "KEY_A", "--value", "a", "--project", "alpha"], tmp_path)
+    run_lockr(["set", "KEY_B", "--value", "b", "--project", "beta"], tmp_path)
+    result = run_lockr(["audit", "--project", "alpha"], tmp_path)
+    assert result.exit_code == 0
+    assert "KEY_A" in result.output
+    assert "KEY_B" not in result.output
+
+
+def test_audit_fails_when_vault_locked(tmp_path: Path):
+    _init_and_unlock(tmp_path)
+    run_lockr(["lock"], tmp_path)
+    result = run_lockr(["audit"], tmp_path)
+    assert result.exit_code == 1
+    assert "locked" in result.output.lower()
+
+
+def test_audit_never_exposes_value(tmp_path: Path):
+    import dataclasses
+    from lockr.app.vault_service import AuditResult
+    field_names = {f.name for f in dataclasses.fields(AuditResult)}
+    assert "value" not in field_names

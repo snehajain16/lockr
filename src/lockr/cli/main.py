@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from lockr.app.vault_service import (
+    AuditResult,
     BackupError,
     ExportResult,
     ImportApplyResult,
@@ -153,6 +154,32 @@ def list_command(
         return
     for item in items:
         typer.echo(f"{item.project}/{item.environment} {item.key} updated={item.updated_at}")
+
+
+@app.command("audit")
+def audit_command(
+    project: Annotated[str | None, typer.Option("--project", help="Filter by project.")] = None,
+    environment: Annotated[str | None, typer.Option("--environment", help="Filter by environment.")] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Print JSON output.")] = False,
+) -> None:
+    """List secrets with audit metadata. Never exposes secret values."""
+    try:
+        items = service().list_audit(project=project, environment=environment)
+    except (VaultLockedError, LockrError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    if json_output:
+        typer.echo(json.dumps([item.__dict__ for item in items], indent=2))
+        return
+    if not items:
+        typer.echo("No secrets found.")
+        return
+    for item in items:
+        rotated = item.last_rotated_at or "never"
+        typer.echo(
+            f"{item.project}/{item.environment} {item.key} "
+            f"created={item.created_at} updated={item.updated_at} rotated={rotated}"
+        )
 
 
 @app.command("import-env")
