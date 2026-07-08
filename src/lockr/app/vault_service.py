@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +32,16 @@ class SecretNotFoundError(LockrError):
 
 class VaultAlreadyExistsError(LockrError):
     pass
+
+
+class BackupError(LockrError):
+    pass
+
+
+@dataclass
+class BackupResult:
+    artifact_path: Path
+    committed: bool
 
 
 @dataclass
@@ -216,6 +227,29 @@ class VaultService:
             for s in vault.secrets
             if s.project == project and s.environment == environment
         }
+
+    def create_backup(self, repo: Path, commit: bool = False) -> BackupResult:
+        from lockr.integrations.git_backup import (
+            BackupError as GitBackupError,
+            check_git_available,
+            check_gpg_available,
+            git_add_and_commit,
+        )
+        self._read_encrypted_vault()
+        try:
+            check_git_available()
+            check_gpg_available()
+        except GitBackupError as exc:
+            raise BackupError(str(exc)) from exc
+        artifact = repo / "lockr-vault.lockr"
+        shutil.copy2(self.paths.vault_file, artifact)
+        if commit:
+            try:
+                git_add_and_commit(repo, artifact, "lockr: update vault backup")
+            except GitBackupError as exc:
+                raise BackupError(str(exc)) from exc
+        atomic_write_json(self.paths.backup_config_file, {"repo": str(repo), "last_backup_at": utc_now()})
+        return BackupResult(artifact_path=artifact, committed=commit)
 
     def _write_session(self, key_b64: str) -> None:
         payload = {"key": key_b64, "created_at": utc_now()}

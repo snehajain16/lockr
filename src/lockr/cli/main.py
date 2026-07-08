@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from lockr.app.vault_service import (
+    BackupError,
     ExportResult,
     ImportApplyResult,
     LockrError,
@@ -20,6 +21,8 @@ from lockr.paths import get_lockr_paths
 from lockr.storage.files import atomic_write_text
 
 app = typer.Typer(help="Lockr secrets vault")
+backup_app = typer.Typer(help="Backup and recovery commands.")
+app.add_typer(backup_app, name="backup")
 
 
 def service() -> VaultService:
@@ -198,6 +201,21 @@ def run_command(
     from lockr.integrations.shell import run_with_injected_env
     exit_code = run_with_injected_env(command, secrets)
     raise typer.Exit(code=exit_code)
+
+
+@backup_app.command("create")
+def backup_create_command(
+    repo: Annotated[Path, typer.Option("--repo", help="Path to git repository for backup.")],
+    commit: Annotated[bool, typer.Option("--commit", help="Stage and commit after writing artifact.")] = False,
+) -> None:
+    try:
+        result = service().create_backup(repo=repo, commit=commit)
+    except (LockrError, BackupError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Backup written to {result.artifact_path}.")
+    if result.committed:
+        typer.echo("Changes committed to git repository.")
 
 
 @app.command("export-env")

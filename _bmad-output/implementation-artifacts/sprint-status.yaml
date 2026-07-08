@@ -53,8 +53,8 @@ development_status:
   epic-3-retrospective: optional
 
   # ── Epic 4: Backup and Recovery ───────────────────────────────────────────
-  epic-4: backlog
-  4-1-create-encrypted-git-backup: backlog
+  epic-4: in-progress
+  4-1-create-encrypted-git-backup: review
   4-2-restore-from-encrypted-backup: backlog
   4-3-show-backup-status: backlog
   epic-4-retrospective: optional
