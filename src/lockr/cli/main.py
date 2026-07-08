@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from lockr.app.vault_service import (
+    BackupError,
     ExportResult,
     ImportApplyResult,
     LockrError,
@@ -20,6 +21,8 @@ from lockr.paths import get_lockr_paths
 from lockr.storage.files import atomic_write_text
 
 app = typer.Typer(help="Lockr secrets vault")
+backup_app = typer.Typer(help="Backup and recovery commands.")
+app.add_typer(backup_app, name="backup")
 
 
 def service() -> VaultService:
@@ -179,6 +182,40 @@ def import_env_command(
     except (LockrError, VaultLockedError, OSError) as exc:
         render_error(exc)
         raise typer.Exit(code=1) from exc
+
+
+@app.command("run")
+def run_command(
+    command: Annotated[list[str], typer.Argument(help="Command and arguments to run.")],
+    project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
+    environment: Annotated[str, typer.Option("--environment", help="Environment name.")] = "default",
+) -> None:
+    if not command:
+        typer.echo("No command provided.", err=True)
+        raise typer.Exit(code=2)
+    try:
+        secrets = service().get_secrets_for_injection(project=project, environment=environment)
+    except (LockrError, VaultLockedError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    from lockr.integrations.shell import run_with_injected_env
+    exit_code = run_with_injected_env(command, secrets)
+    raise typer.Exit(code=exit_code)
+
+
+@backup_app.command("create")
+def backup_create_command(
+    repo: Annotated[Path, typer.Option("--repo", help="Path to git repository for backup.")],
+    commit: Annotated[bool, typer.Option("--commit", help="Stage and commit after writing artifact.")] = False,
+) -> None:
+    try:
+        result = service().create_backup(repo=repo, commit=commit)
+    except (LockrError, BackupError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Backup written to {result.artifact_path}.")
+    if result.committed:
+        typer.echo("Changes committed to git repository.")
 
 
 @app.command("export-env")
