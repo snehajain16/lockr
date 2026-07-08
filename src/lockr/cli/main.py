@@ -181,6 +181,25 @@ def import_env_command(
         raise typer.Exit(code=1) from exc
 
 
+@app.command("run")
+def run_command(
+    command: Annotated[list[str], typer.Argument(help="Command and arguments to run.")],
+    project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
+    environment: Annotated[str, typer.Option("--environment", help="Environment name.")] = "default",
+) -> None:
+    if not command:
+        typer.echo("No command provided.", err=True)
+        raise typer.Exit(code=2)
+    try:
+        secrets = service().get_secrets_for_injection(project=project, environment=environment)
+    except (LockrError, VaultLockedError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    from lockr.integrations.shell import run_with_injected_env
+    exit_code = run_with_injected_env(command, secrets)
+    raise typer.Exit(code=exit_code)
+
+
 @app.command("export-env")
 def export_env_command(
     project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
