@@ -1,7 +1,0 @@
-{
-  "version": 1,
-  "kdf": "scrypt",
-  "salt": "4O06mpANMOjuHiW2vNApeA==",
-  "nonce": "nj+vfhukbjzZKvHE",
-  "ciphertext": "oJk6+JGfobG2KU6fnx1CG2ufw3GGGnLu/sZzl+/MnQh73pleiOoyo6jZMCffMtJK7OQmjuR9ISltdRC9fzFI54rKAXu7FUoeolh65mzPVb1yqxlphfMzyewWTFM3Zu/jo0pgGmLBoc7WCpzEjuefKG8d1zz8ua//CoqEK6pxCaOZFFs0sHUagNAZq9uy+uQ1hTJyUCP2w4xAnKNxO7GZ7/R/2srAnAKKOLsB0I1ApqcwNC3e3/DPbvajxDgpbzgLwvmrCCa2FzuWF4aBwOAWiK6cHSRbZsdmfAbDOFQepc8hhs0/saRmayB4MfDiITQvz26okfq0vH7iWZQCn8vo14oXIlMpmt7cUqMYvhTZn/nCCromAK+9KkcgLqaSbKBbraTOLGJX2A=="
-}
