@@ -218,6 +218,17 @@ def backup_create_command(
         typer.echo("Changes committed to git repository.")
 
 
+@app.command("tui")
+def tui_command() -> None:
+    """Launch the interactive TUI browser."""
+    try:
+        from lockr.tui.app import LockrTuiApp
+        LockrTuiApp().run()
+    except (LockrError, VaultLockedError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+
+
 @app.command("export-env")
 def export_env_command(
     project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",

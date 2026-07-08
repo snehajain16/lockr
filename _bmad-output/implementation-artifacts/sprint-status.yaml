@@ -60,7 +60,7 @@ development_status:
   epic-4-retrospective: optional
 
   # ── Epic 5: TUI and Audit Visibility ──────────────────────────────────────
-  epic-5: backlog
-  5-1-browse-secrets-in-a-tui: backlog
+  epic-5: in-progress
+  5-1-browse-secrets-in-a-tui: review
   5-2-view-audit-metadata: backlog
   epic-5-retrospective: optional
