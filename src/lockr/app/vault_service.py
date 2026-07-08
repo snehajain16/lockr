@@ -59,6 +59,17 @@ class ListResult:
 
 
 @dataclass
+class AuditResult:
+    key: str
+    project: str
+    environment: str
+    description: str
+    created_at: str
+    updated_at: str
+    last_rotated_at: str | None
+
+
+@dataclass
 class ImportPreviewResult:
     entries: list[EnvEntry]
     malformed_lines: list[int]
@@ -156,6 +167,25 @@ class VaultService:
                 )
             )
         return sorted(items, key=lambda item: (item.project, item.environment, item.key))
+
+    def list_audit(self, project: str | None = None, environment: str | None = None) -> list[AuditResult]:
+        vault = self._load_vault()
+        results: list[AuditResult] = []
+        for s in vault.secrets:
+            if project and s.project != project:
+                continue
+            if environment and s.environment != environment:
+                continue
+            results.append(AuditResult(
+                key=s.key,
+                project=s.project,
+                environment=s.environment,
+                description=s.description,
+                created_at=s.created_at,
+                updated_at=s.updated_at,
+                last_rotated_at=s.last_rotated_at,
+            ))
+        return sorted(results, key=lambda r: (r.project, r.environment, r.key))
 
     def preview_import_env(self, env_path: Path) -> ImportPreviewResult:
         result = parse_env_file(env_path)
