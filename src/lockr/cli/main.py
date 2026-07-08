@@ -17,6 +17,8 @@ from lockr.app.vault_service import (
     VaultAlreadyExistsError,
     VaultLockedError,
     VaultService,
+    RestoreResult,
+    BackupStatus,
 )
 from lockr.paths import get_lockr_paths
 from lockr.storage.files import atomic_write_text
@@ -243,6 +245,53 @@ def backup_create_command(
     typer.echo(f"Backup written to {result.artifact_path}.")
     if result.committed:
         typer.echo("Changes committed to git repository.")
+
+
+@backup_app.command("restore")
+def backup_restore_command(
+    repo: Annotated[Path, typer.Option("--repo", help="Path to git repository containing backup artifact.")],
+) -> None:
+    """Restore vault from an encrypted backup artifact."""
+    try:
+        result = service().restore_backup(repo=repo)
+    except (LockrError, BackupError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Vault restored from {result.artifact_path}.")
+    if result.previous_backed_up:
+        typer.echo("Previous vault saved as vault.lockr.bak.")
+
+
+@backup_app.command("status")
+def backup_status_command() -> None:
+    """Show backup configuration and dependency status."""
+    try:
+        status = service().backup_status()
+    except (LockrError, BackupError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"Backup repo:    {status.repo or '(not configured)'}")
+    typer.echo(f"Last backup:    {status.last_backup_at or '(never)'}")
+    typer.echo(f"git available:  {'yes' if status.git_available else 'NO - install git'}")
+    typer.echo(f"gpg available:  {'yes' if status.gpg_available else 'NO - install gpg'}")
+
+
+@app.command("export-shell")
+def export_shell_command(
+    project: Annotated[str, typer.Option("--project", help="Project name.")] = "default",
+    environment: Annotated[str, typer.Option("--environment", help="Environment name.")] = "default",
+    shell: Annotated[str, typer.Option("--shell", help="Shell syntax: posix or powershell.")] = "posix",
+) -> None:
+    """Print shell export statements for sourcing secrets into the current shell."""
+    if shell not in ("posix", "powershell"):
+        typer.echo("--shell must be 'posix' or 'powershell'.", err=True)
+        raise typer.Exit(code=2)
+    try:
+        content = service().export_shell(project=project, environment=environment, shell=shell)
+    except (LockrError, VaultLockedError) as exc:
+        render_error(exc)
+        raise typer.Exit(code=1) from exc
+    typer.echo(content, nl=False)
 
 
 @app.command("tui")

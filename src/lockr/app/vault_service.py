@@ -59,6 +59,20 @@ class ListResult:
 
 
 @dataclass
+class RestoreResult:
+    artifact_path: Path
+    previous_backed_up: bool
+
+
+@dataclass
+class BackupStatus:
+    repo: Path | None
+    last_backup_at: str | None
+    git_available: bool
+    gpg_available: bool
+
+
+@dataclass
 class AuditResult:
     key: str
     project: str
@@ -280,6 +294,65 @@ class VaultService:
                 raise BackupError(str(exc)) from exc
         atomic_write_json(self.paths.backup_config_file, {"repo": str(repo), "last_backup_at": utc_now()})
         return BackupResult(artifact_path=artifact, committed=commit)
+
+    def restore_backup(self, repo: Path) -> RestoreResult:
+        from lockr.integrations.git_backup import BackupError as GitBackupError, check_git_available, check_gpg_available
+        try:
+            check_git_available()
+            check_gpg_available()
+        except GitBackupError as exc:
+            raise BackupError(str(exc)) from exc
+        artifact = repo / "lockr-vault.lockr"
+        if not artifact.exists():
+            raise BackupError(f"Backup artifact not found: {artifact}")
+        try:
+            EncryptedVault.from_json(artifact.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise BackupError(f"Backup artifact is not a valid vault: {exc}") from exc
+        ensure_directory(self.paths.home)
+        backed_up = False
+        if self.paths.vault_file.exists():
+            bak = self.paths.vault_file.with_suffix(".lockr.bak")
+            shutil.copy2(self.paths.vault_file, bak)
+            backed_up = True
+        shutil.copy2(artifact, self.paths.vault_file)
+        return RestoreResult(artifact_path=artifact, previous_backed_up=backed_up)
+
+    def backup_status(self) -> BackupStatus:
+        from lockr.integrations.git_backup import BackupError as GitBackupError, check_git_available, check_gpg_available
+        repo: Path | None = None
+        last_backup_at: str | None = None
+        if self.paths.backup_config_file.exists():
+            try:
+                cfg = read_json(self.paths.backup_config_file)
+                repo = Path(cfg["repo"]) if cfg.get("repo") else None
+                last_backup_at = cfg.get("last_backup_at")
+            except Exception:
+                pass
+        git_ok = True
+        gpg_ok = True
+        try:
+            check_git_available()
+        except GitBackupError:
+            git_ok = False
+        try:
+            check_gpg_available()
+        except GitBackupError:
+            gpg_ok = False
+        return BackupStatus(repo=repo, last_backup_at=last_backup_at, git_available=git_ok, gpg_available=gpg_ok)
+
+    def export_shell(self, project: str = "default", environment: str = "default", shell: str = "posix") -> str:
+        secrets = self.get_secrets_for_injection(project=project, environment=environment)
+        lines = []
+        for key in sorted(secrets):
+            value = secrets[key]
+            if shell == "powershell":
+                escaped = value.replace('"', '""')
+                lines.append(f'$env:{key} = "{escaped}"')
+            else:
+                import shlex
+                lines.append(f"export {key}={shlex.quote(value)}")
+        return "\n".join(lines) + ("\n" if lines else "")
 
     def _write_session(self, key_b64: str) -> None:
         payload = {"key": key_b64, "created_at": utc_now()}
