@@ -205,6 +205,18 @@ class VaultService:
         ]
         return ExportResult(content=render_env(selected), count=len(selected))
 
+    def get_secrets_for_injection(
+        self,
+        project: str = "default",
+        environment: str = "default",
+    ) -> dict[str, str]:
+        vault = self._load_vault()
+        return {
+            s.key: s.value
+            for s in vault.secrets
+            if s.project == project and s.environment == environment
+        }
+
     def _write_session(self, key_b64: str) -> None:
         payload = {"key": key_b64, "created_at": utc_now()}
         atomic_write_json(self.paths.session_file, payload)
